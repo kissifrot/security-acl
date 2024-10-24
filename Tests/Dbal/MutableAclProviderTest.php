@@ -261,10 +261,18 @@ class MutableAclProviderTest extends TestCase
             ->expects($this->never())
             ->method('beginTransaction')
         ;
-        $con
-            ->expects($this->never())
-            ->method('executeUpdate')
-        ;
+        if (method_exists(Connection::class, 'executeUpdate')) {
+            // DBAL < 4.0
+            $con
+                ->expects($this->never())
+                ->method('executeUpdate')
+            ;
+        } else {
+            $con
+                ->expects($this->never())
+                ->method('executeStatement')
+            ;
+        }
 
         $provider = new MutableAclProvider($con, new PermissionGrantingStrategy(), []);
         $acl = new Acl(1, new ObjectIdentity(1, 'Foo'), new PermissionGrantingStrategy(), [], true);
@@ -536,7 +544,10 @@ class MutableAclProviderTest extends TestCase
             ],
             $configuration
         );
-        $this->connection->setNestTransactionsWithSavepoints(true);
+        if (method_exists($configuration, 'setNestTransactionsWithSavepoints')) {
+            // DBAL < 4.0
+            $this->connection->setNestTransactionsWithSavepoints(true);
+        }
 
         // import the schema
         $schema = new Schema($this->getOptions());
@@ -547,6 +558,7 @@ class MutableAclProviderTest extends TestCase
 
     protected function tearDown(): void
     {
+        $this->connection->close();
         $this->connection = null;
     }
 

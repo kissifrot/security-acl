@@ -80,6 +80,9 @@ class MutableAclProvider extends AclProvider implements MutableAclProviderInterf
      */
     public function deleteAcl(ObjectIdentityInterface $oid)
     {
+        if (!$this->connection->isTransactionActive()) {
+            $this->connection->setNestTransactionsWithSavepoints(true);
+        }
         $this->connection->beginTransaction();
         try {
             foreach ($this->findChildren($oid, true) as $childOid) {
